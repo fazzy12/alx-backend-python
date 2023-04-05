@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This project module contains a asynchronous coroutine
+Contains a asynchronous coroutine
 that takes no arguments. The coroutine will collect
 10 random numbers using an async comprehensing over
 async_generator, then return the 10 random numbers.
@@ -14,7 +14,7 @@ async_generator = __import__(
 
 async def async_comprehension() -> List[float]:
     """
-    This is an asynchronous coroutine that takes no
+    Asynchronous coroutine that takes no
     arguments. The coroutine will collect 10 random
     numbers using an async comprehensing over
     async_generator.
