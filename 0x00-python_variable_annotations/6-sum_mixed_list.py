@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from typing import List, Union
 
 """function will have type annotations using
