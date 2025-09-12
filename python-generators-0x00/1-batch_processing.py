@@ -17,7 +17,7 @@ def stream_users_in_batches(batch_size):
         while True:
             batch = cursor.fetchmany(size=batch_size)
             if not batch:
-                break
+                return
             yield batch
     
     except mysql.connector.Error as err:
