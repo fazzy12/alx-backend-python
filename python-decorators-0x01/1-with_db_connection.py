@@ -9,7 +9,7 @@ def with_db_connection(func):
             return func(conn, *args, **kwargs)
         finally:
             conn.close()
-        return wrapper
+    return wrapper
 
 @with_db_connection 
 def get_user_by_id(conn, user_id): 
@@ -18,5 +18,5 @@ def get_user_by_id(conn, user_id):
     return cursor.fetchone() 
     #### Fetch user by ID with automatic connection handling 
 
-user = get_user_by_id(user_id=2)
+user = get_user_by_id(user_id=1)
 print(user)
