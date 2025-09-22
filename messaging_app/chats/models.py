@@ -3,11 +3,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
-    id = models.UUDIField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.UUDIField(primary_key=True, default=uuid.uuid4, editable=False)
     
     email = moedls.EmailField(unique=True)
     
     
+    password_hash = models.CharField(max_length=128, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     
     ROLE_CHOICES = (
@@ -27,7 +28,7 @@ class User(AbstractUser):
 
 
 class Conversation(models.Model):
-    id = models.UUIDFields(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation_id = models.UUIDFields(primary_key=True, default=uuid.uuid4, editable=False)
     
     participants = models.ManyToManyField(User, related_name='conversations')
     
@@ -38,7 +39,7 @@ class Conversation(models.Model):
 
 
 class Message(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     sender = models.ForiegnKey(User, on_delete=models.CASCADE, ralated_name='sent_messages')
     
