@@ -36,6 +36,32 @@ class ConversationSerializeer(serializers.ModelSerializer):
     
     participants = UserSerializer(many=True, read_only=True)
     
+    participants_emails = serializers.ListField(
+        child=serializers.EmailField(),
+        write_only=True,
+        required=True
+    )
+    
+    message_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Conversation
-        fields = ['converstion_id', 'participants', 'messages', 'created_at']
+        fields = ['conversation_id', 'participants', 'messages', 'message_count', 'created_at', 'participants_emails']
+    
+    def get_message_count(self, obj):
+        return obj.messages.count()
+    
+    def create(self, validated_data):
+        participants_emails = validated_data.pop('particpants_emails', [])
+        
+        conversation = Conversation.objects.create(**validated_data)
+        
+        for email in participants_emails:
+            try:
+                user = User.objects.get(email=email)
+                conversation.participants.add(user)
+            except User.DoesNotExist:
+                raise serializers.ValidationError(f"User with email {email} does not exist.")
+        
+        return conversation
+
