@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'chats',
+    'rest_framework_simplejwt'
 ]
 
 MIDDLEWARE = [
@@ -127,9 +129,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ]
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ]
+}
+
+
+# Simple JWT Configuration (Customizing Token Lifespan)
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), # Access token lasts 60 minutes
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),   # Refresh token lasts 7 days
+    "ROTATE_REFRESH_TOKENS": True,                 # Recommended for security
+    "BLACKLIST_AFTER_ROTATION": True,              # Recommended for security
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,                     # Uses Django's secret key
+    "AUTH_HEADER_TYPES": ("Bearer",),              # Tokens will be sent as "Authorization: Bearer <token>"
 }
