@@ -4,7 +4,7 @@ from .models import Message
 class MessageFilter(django_filters.FilterSet):
     sent_at = django_filters.DateTimeFromToRangeFilter()
     
-    conversation_id = django_filters.UUIDFilter(field_name='conversation_id')
+    conversation_id = django_filters.UUIDFilter(field_name='conversation__conversation_id')
 
     class Meta:
         model = Message

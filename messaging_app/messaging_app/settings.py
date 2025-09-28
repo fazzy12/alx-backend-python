@@ -129,20 +129,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ]
-    
+    ],
     'DEFAULT_PAGINATION_CLASS': 'chats.pagination.MessagePagination',
     'PAGE_SIZE': 20,
-    
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
-
+    'PAGINATION_REFERENCE_CLASS': 'rest_framework.pagination.PageNumberPagination',
 }
 
 
