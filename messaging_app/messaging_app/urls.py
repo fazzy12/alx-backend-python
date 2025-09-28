@@ -17,18 +17,26 @@ Including another URLconf
 """
 URL configuration for messaging_app project.
 """
+"""
+URL configuration for messaging_app project.
+# ... (docstring)
+"""
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from chats.serializers import CustomTokenObtainPairSerializer
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # JWT Authentication Endpoints:
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path(
+        'api/token/', 
+        TokenObtainPairView.as_view(serializer_class=CustomTokenObtainPairSerializer),
+        name='token_obtain_pair'
+    ),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('api/', include('chats.urls')),
