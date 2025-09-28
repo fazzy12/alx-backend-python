@@ -38,13 +38,17 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
-    serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
+queryset = Message.objects.all()
+serializer_class = MessageSerializer
+permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
+    
+pagination_class = MessagePagination
+filter_backends = [filters.OrderingFilter, django_filters.rest_framework.DjangoFilterBackend]
+filterset_class = MessageFilter
+    
+def get_queryset(self):
+    user = self.request.user
+    return Message.objects.filter(conversation__participants=user).distinct().order_by('-sent_at')
 
-    def get_queryset(self):
-        user = self.request.user
-        return Message.objects.filter(conversation__participants=user).distinct()
-
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+def perform_create(self, serializer):
+    serializer.save(sender=self.request.user)
