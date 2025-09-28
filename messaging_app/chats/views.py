@@ -20,8 +20,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def send_message(self, request, pk=None):
 
-        conversation = get_object_or_404(Conversation, pk=pk)
-        
+        conversation = get_object_or_404(Conversation, conversation_id=pk)
         if request.user not in conversation.participants.all():
             return Response(
                 {"detail": "You are not a participant in this conversation."},
