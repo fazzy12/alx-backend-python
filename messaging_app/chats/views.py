@@ -2,9 +2,15 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .serializers import ConversationSerializer, MessageSerializer
 from .models import Conversation, Message
-from .permissions import IsParticipantOfConversation
+from .permissions import IsParticipantOfConversation 
+
+from .pagination import MessagePagination
+from .filters import MessageFilter
 
 class ConversationViewSet(viewsets.ModelViewSet):
 
@@ -38,17 +44,17 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-queryset = Message.objects.all()
-serializer_class = MessageSerializer
-permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
-    
-pagination_class = MessagePagination
-filter_backends = [filters.OrderingFilter, django_filters.rest_framework.DjangoFilterBackend]
-filterset_class = MessageFilter
-    
-def get_queryset(self):
-    user = self.request.user
-    return Message.objects.filter(conversation__participants=user).distinct().order_by('-sent_at')
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
+        
+    pagination_class = MessagePagination 
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter] 
+    filterset_class = MessageFilter 
 
-def perform_create(self, serializer):
-    serializer.save(sender=self.request.user)
+    def get_queryset(self):
+        user = self.request.user
+        return Message.objects.filter(conversation__participants=user).distinct().order_by('-sent_at')
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
