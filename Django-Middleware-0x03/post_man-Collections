@@ -1,0 +1,437 @@
+{
+    "info": {
+        "_postman_id": "8b52e39c-36a4-44b2-a4e8-f29e16d4c0c1",
+        "name": "Messaging App API - Authentication & Permissions",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Tests JWT authentication, custom IsParticipantOfConversation permissions, pagination, and filtering."
+    },
+    "variable": [
+        {
+            "key": "BASE_URL",
+            "value": "http://127.0.0.1:8000"
+        },
+        {
+            "key": "ACCESS_TOKEN_A",
+            "value": ""
+        },
+        {
+            "key": "CONVO_UUID",
+            "value": ""
+        },
+        {
+            "key": "MSG_UUID",
+            "value": ""
+        },
+        {
+            "key": "INTRUDER_TOKEN",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "1. Authentication Flow",
+            "item": [
+                {
+                    "name": "Login - User A (Get Token)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user.a@test.com\",\n    \"password\": \"testpassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/token/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "token",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Check for successful login",
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "// Save access token to environment variable",
+                                    "const response = pm.response.json();",
+                                    "pm.environment.set(\"ACCESS_TOKEN_A\", response.access);",
+                                    "pm.environment.set(\"REFRESH_TOKEN_A\", response.refresh);",
+                                    "pm.test(\"Access Token is present\", function () {",
+                                    "    pm.expect(pm.environment.get(\"ACCESS_TOKEN_A\")).to.be.a('string');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Login - User C (Get Intruder Token)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"intruder@test.com\",\n    \"password\": \"testpassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/token/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "token",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.environment.set(\"INTRUDER_TOKEN\", response.access);",
+                                    "pm.test(\"Intruder Token is present\", function () {",
+                                    "    pm.expect(pm.environment.get(\"INTRUDER_TOKEN\")).to.be.a('string');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Unauthorized - Global Check (Should Fail)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/messages/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "messages",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Tests global IsAuthenticated default permission",
+                                    "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. Conversation Management",
+            "item": [
+                {
+                    "name": "List Conversations (GET - Authenticated)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ACCESS_TOKEN_A}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/conversations/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "conversations",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "// Save the UUID of the first conversation for subsequent tests",
+                                    "const convo_id = pm.response.json()[0].conversation_id;",
+                                    "pm.environment.set(\"CONVO_UUID\", convo_id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create New Conversation (POST)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ACCESS_TOKEN_A}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"participants_emails\": [\"user.a@test.com\", \"user.b@test.com\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/conversations/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "conversations",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 201 Created\", function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Send Message (Custom Action)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ACCESS_TOKEN_A}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message_body\": \"Test message sent via the custom action.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/conversations/{{CONVO_UUID}}/send_message/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "conversations",
+                                "{{CONVO_UUID}}",
+                                "send_message",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 201 Created\", function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. Messages, Permissions, & Pagination",
+            "item": [
+                {
+                    "name": "List/Filter Messages (Pagination Check)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ACCESS_TOKEN_A}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/messages/?conversation_id={{CONVO_UUID}}&page_size=2",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "messages",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "conversation_id",
+                                    "value": "{{CONVO_UUID}}"
+                                },
+                                {
+                                    "key": "page_size",
+                                    "value": "2"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "// Check for pagination structure and filter success",
+                                    "pm.test(\"Response has pagination count and results\", function () {",
+                                    "    pm.expect(response.count).to.be.above(0);",
+                                    "    pm.expect(response.results.length).to.be.at.most(2);",
+                                    "});",
+                                    "// Save the message UUID for the deletion test",
+                                    "pm.environment.set(\"MSG_UUID\", response.results[0].message_id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Intruder Access (Should Fail - 403 Forbidden)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{INTRUDER_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/conversations/{{CONVO_UUID}}/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "conversations",
+                                "{{CONVO_UUID}}",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Tests IsParticipantOfConversation on a detail endpoint",
+                                    "pm.test(\"Status code is 403 Forbidden\", function () {",
+                                    "    pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Delete Message (Permissions Check)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ACCESS_TOKEN_A}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/messages/{{MSG_UUID}}/",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "messages",
+                                "{{MSG_UUID}}",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": [
+                                "pm.test(\"Status code is 204 No Content\", function () {",
+                                "    pm.response.to.have.status(204);",
+                                "});"
+                            ],
+                            "type": "text/javascript"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
