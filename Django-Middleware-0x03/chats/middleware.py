@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from django.http import HttpResponseForbidden
 
 LOG_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'requests.log')
 
@@ -22,4 +23,27 @@ class RequestLoggingMiddleware:
         with open(LOG_FILE_PATH, 'a') as f:
             f.write(log_entry + '\n')
         
+        return response
+
+
+class RestrictAccessByTimeMiddleware:
+    """
+    Restricts access to the application between 9 PM and 6 AM.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        now = datetime.now()
+        current_hour = now.hour
+            
+        # Access is restricted if the time is 9 PM (21) or later, 
+        # OR before 6 AM (6).
+        if current_hour >= 21 or current_hour < 6:
+            # Return a 403 Forbidden error
+            return HttpResponseForbidden(
+                "Access is restricted outside of 6:00 AM and 9:00 PM (server time)."
+            )
+
+        response = self.get_response(request)
         return response
