@@ -97,7 +97,7 @@ class OffensiveLanguageMiddleware:
 ALLOWED_ROLES = ['admin', 'host'] 
 
 
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     """
     Checks the authenticated user's role and restricts access for non-privileged users
     on non-safe (modifying) HTTP methods.
