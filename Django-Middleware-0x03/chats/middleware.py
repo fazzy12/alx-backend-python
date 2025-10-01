@@ -92,3 +92,30 @@ class OffensiveLanguageMiddleware:
                 
         response = self.get_response(request)
         return response
+
+
+ALLOWED_ROLES = ['admin', 'host'] 
+
+
+class RolePermissionMiddleware:
+    """
+    Checks the authenticated user's role and restricts access for non-privileged users
+    on non-safe (modifying) HTTP methods.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+            
+
+        if (request.user.is_authenticated and 
+            request.method not in ('GET', 'HEAD', 'OPTIONS')):
+                
+            if request.user.role not in ALLOWED_ROLES:
+                return HttpResponseForbidden(
+                    f"Permission denied. Your role ({request.user.role}) is not authorized to perform this action."
+                )
+
+
+        response = self.get_response(request)
+        return response
