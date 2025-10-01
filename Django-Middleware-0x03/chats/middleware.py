@@ -87,10 +87,8 @@ class OffensiveLanguageMiddleware:
                     f"Message limit exceeded. You can only send {MAX_MESSAGES_PER_MINUTE} messages per minute."
                 )
                 
-            # If under the limit, record the new request time and update the tracker
             recent_requests.append(now)
             RPS_TRACKER[ip_address] = recent_requests
                 
-        # Process the request if it's not a POST, or if it passed the rate limit check
         response = self.get_response(request)
         return response
