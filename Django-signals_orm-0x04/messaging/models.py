@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
+from django.db.models.signals import post_save
+from django.db.models.signals import pre_save
 
 class CustomUserManager(BaseUserManager):
     """Custom manager for the User model, enabling email-based login."""
@@ -41,6 +43,8 @@ class Message(models.Model):
 
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    edited = models.BooleanField(default=False) 
+
     
     objects = models.Manager() 
 
@@ -49,6 +53,24 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Msg {self.id} from {self.sender.email}"
+
+
+class MessageHistory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(
+        Message, 
+        on_delete=models.CASCADE,
+        related_name='history'
+    )
+    old_content = models.TextField()
+    edited_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-edited_at']
+        verbose_name_plural = "Message History"
+
+    def __str__(self):
+        return f"History for Msg {self.message.id} at {self.edited_at}"
 
 
 class Notification(models.Model):
