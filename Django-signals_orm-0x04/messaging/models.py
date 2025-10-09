@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 
-# --- Custom User Manager ---
 class CustomUserManager(BaseUserManager):
     """Custom manager for the User model, enabling email-based login."""
     def create_user(self, email, password=None, **extra_fields):
@@ -34,18 +33,15 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
-# --- Message Model (T0 Core) ---
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
-    # T0 Requirement: The recipient of the message
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
 
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     
-    # Simple default manager
     objects = models.Manager() 
 
     class Meta:
@@ -55,7 +51,6 @@ class Message(models.Model):
         return f"Msg {self.id} from {self.sender.email}"
 
 
-# --- Notification Model (T0 Core) ---
 class Notification(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
