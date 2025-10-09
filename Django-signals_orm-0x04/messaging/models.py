@@ -64,6 +64,14 @@ class MessageHistory(models.Model):
     )
     old_content = models.TextField()
     edited_at = models.DateTimeField(auto_now_add=True)
+    edited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='edited_messages_history'
+    ) 
+
 
     class Meta:
         ordering = ['-edited_at']
