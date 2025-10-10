@@ -13,11 +13,11 @@ def delete_user(request):
     This triggers the post_delete signal for cleanup.
     """
     if request.method == 'POST':
-        user_to_delete = request.user
+        user = request.user
         
         logout(request)
 
-        user_to_delete.delete()
+        user.delete()
         
         return HttpResponse("Account deleted successfully.", status=200)
     
