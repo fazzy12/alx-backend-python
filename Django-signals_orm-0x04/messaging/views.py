@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .models import User, Message, MessageHistory
 from django.db import connection
+from django.db.models import Q
 
 
 
@@ -57,20 +58,52 @@ def message_history(request, message_id):
 
 
 @login_required
+def message_list_optimized(request):
+    """
+    Demonstrates optimization (select_related) for a general message list/inbox query.
+    """
+    messages = Message.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user)
+    ).select_related('sender', 'receiver').order_by('-timestamp')
+    
+    output_lines = [f"--- Optimized Message List for {request.user.email} ---"]
+    output_lines.append(f"Total messages (first 5 shown): {len(messages)}")
+    output_lines.append("---")
+
+    for m in messages[:5]:
+        output_lines.append(f"[{m.timestamp.strftime('%H:%M:%S')}] From: {m.sender.email} | To: {m.receiver.email} | Content: {m.content[:30]}...")
+    
+    output_lines.append("\n--- Optimization Summary ---")
+    output_lines.append("Used select_related('sender', 'receiver') to eagerly fetch foreign key data, preventing the N+1 problem for listing messages.")
+
+    return HttpResponse("\n".join(output_lines), status=200, content_type="text/plain")
+
+
+
+@login_required
 def message_thread(request, message_id):
     """
-    Displays a message thread using optimized ORM techniques.
+    Displays a message thread demonstrating optimized ORM techniques (Task 3).
     """
+    
     try:
         initial_query_count = len(connection.queries)
         
-        thread = Message.objects.get_thread(message_id) 
+        thread = Message.objects.get_thread_optimized(message_id) 
         
-        list(thread)
+        list(thread) 
         final_query_count = len(connection.queries)
         
     except Message.DoesNotExist:
-        raise Http404("Root message not found")
+        if not Message.objects.filter(id=message_id).exists():
+            raise Http404("Root message not found")
+        thread = []
+        final_query_count = initial_query_count 
+
+
+    if not thread:
+         return HttpResponse("Conversation not found or you are not authorized.", status=403)
+
 
     thread_display = [f"--- Optimized Message Thread (Root ID: {message_id}) ---"]
     thread_display.append(f"Queries executed for fetch (should be 1): {final_query_count - initial_query_count}")
@@ -88,10 +121,9 @@ def message_thread(request, message_id):
             f"  Content: {m.content}"
         )
     
-    thread_display.append("\n--- ORM Optimization Used ---")
-    thread_display.append("1. Custom Manager: Encapsulates query logic (`get_thread`).")
-    thread_display.append("2. Q() Object: Used in the query to fetch the parent and all direct replies in one step (simulating recursive threading at the first level).")
-    thread_display.append("3. select_related(): Used to perform a single SQL JOIN to fetch foreign key objects (sender, receiver, parent_message), avoiding N+1 queries.")
+    thread_display.append("\n--- ORM Optimization Used (Task 3) ---")
+    thread_display.append("1. Custom Manager + Q() Object: Fetches root message and direct replies in a single query (recursive query implementation).")
+    thread_display.append("2. select_related(): Used to eagerly fetch foreign key data (sender, receiver, parent_message) with one SQL JOIN, solving the N+1 issue.")
 
 
     return HttpResponse("\n".join(thread_display), status=200, content_type="text/plain")
