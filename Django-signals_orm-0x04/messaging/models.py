@@ -53,6 +53,21 @@ class ThreadedMessageManager(models.Manager):
             'parent_message'
         ).order_by('timestamp')
 
+    def unread_for_user(self, user):
+        """
+        Filters unread messages for a user, optimized with .only().
+        """
+        return self.filter(
+            receiver=user, 
+            read=False
+        ).select_related('sender').only(
+            'id', 
+            'sender_id', 
+            'receiver_id', 
+            'content', 
+            'timestamp', 
+            'read'
+        )
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -72,6 +87,8 @@ class Message(models.Model):
         related_name='replies'
     )
     
+    read = models.BooleanField(default=False) 
+
     objects = ThreadMessageManager()
     
     objects = models.Manager() 
