@@ -134,17 +134,18 @@ def unread_inbox(request):
     """
     Displays only unread messages using the custom manager's optimized query (Task 4).
     """
-    unread_messages = Message.objects.unread_for_user(request.user)
+    unread_messages = Message.unread.unread_for_user(request.user)
     
     output_lines = [f"--- Unread Inbox for {request.user.email} ---"]
     output_lines.append(f"Total unread messages: {len(unread_messages)}")
     output_lines.append("---")
+
     for m in unread_messages:
         sender_email = m.sender.email 
         output_lines.append(f"From: {sender_email} | Read Status: {m.read} | Content: {m.content[:40]}...")
 
     output_lines.append("\n--- ORM Optimization Summary ---")
-    output_lines.append("1. Custom Manager: Encapsulates business logic (`unread_for_user`).")
+    output_lines.append("1. Custom Manager: Exposed as `Message.unread` and encapsulates business logic (`unread_for_user`).")
     output_lines.append("2. .only(): Used to retrieve only essential fields, reducing database load and memory usage.")
 
     return HttpResponse("\n".join(output_lines), status=200, content_type="text/plain")
