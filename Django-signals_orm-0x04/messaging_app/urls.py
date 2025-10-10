@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/delete/', views.delete_user, name='delete_user'),
     path('messages/<uuid:message_id>/history/', views.message_history,name='message_history'),
+    path('messages/thread/<uuid:message_id>/', views.message_thread, name='message_thread'),
 
 ]

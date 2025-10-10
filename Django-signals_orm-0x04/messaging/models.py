@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.db.models.signals import post_save
 from django.db.models.signals import pre_save
+from django.db.models import Q
 
 class CustomUserManager(BaseUserManager):
     """Custom manager for the User model, enabling email-based login."""
@@ -35,6 +36,24 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+class ThreadedMessageManager(models.Manager):
+    """
+    Custom manager encapsulating advanced ORM techniques for threaded messages.
+    """
+    def get_thread(self, root_message_id):
+        """
+        Optimized query to fetch the root message and all direct replies efficiently.
+        Uses Q() for the query and select_related() for eager loading foreign keys.
+        """
+        return self.filter(
+            Q(pk=root_message_id) | Q(parent_message_id=root_message_id)
+        ).select_related(
+            'sender',
+            'receiver',
+            'parent_message'
+        ).order_by('timestamp')
+
+
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
@@ -45,6 +64,15 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     edited = models.BooleanField(default=False) 
 
+    parent_message = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replies'
+    )
+    
+    objects = ThreadMessageManager()
     
     objects = models.Manager() 
 
