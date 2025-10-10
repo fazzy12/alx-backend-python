@@ -4,9 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .models import User, Message, MessageHistory
 from django.db import connection
-from django.db.models import Q
+from django.db.models import 
+from django.views.decorators.cache import cache_page
+from datetime import datetime
 
 
+def get_current_time():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 @login_required
 def delete_user(request):
@@ -57,16 +61,19 @@ def message_history(request, message_id):
     return HttpResponse("\n".join(history_lines), content_type="text/plain")
 
 
+@cache_page(60)
 @login_required
-def message_list(request):
+def message_list_optimized(request):
     """
-    Demonstrates optimization (select_related) for a general message list/inbox query.
+    Demonstrates optimization (select_related) and basic view caching (Task 5).
     """
     messages = Message.objects.filter(
-        Q(sender=request.user) | Q(receiver=request.user)
+        Q(sender=request.user) | Q(receiver=request.user) 
     ).select_related('sender', 'receiver').order_by('-timestamp')
     
-    output_lines = [f"--- Optimized Message List for {request.user.email} ---"]
+    output_lines = [f"--- Optimized and CACHED Message List for {request.user.email} ---"]
+    output_lines.append(f"Rendered Time: {get_current_time()}")
+    output_lines.append(f"Cache TTL: 60 seconds. Subsequent requests will hit cache, avoiding database queries.")
     output_lines.append(f"Total messages (first 5 shown): {len(messages)}")
     output_lines.append("---")
 
@@ -77,7 +84,6 @@ def message_list(request):
     output_lines.append("Used select_related('sender', 'receiver') to eagerly fetch foreign key data, preventing the N+1 problem for listing messages.")
 
     return HttpResponse("\n".join(output_lines), status=200, content_type="text/plain")
-
 
 
 @login_required

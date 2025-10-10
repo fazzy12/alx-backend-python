@@ -23,6 +23,6 @@ urlpatterns = [
     path('user/delete/', views.delete_user, name='delete_user'),
     path('messages/<uuid:message_id>/history/', views.message_history,name='message_history'),
     path('messages/thread/<uuid:message_id>/', views.message_thread, name='message_thread'),
-    path('messages/inbox/', views.message_list_optimized, name='message_list_optimized'),
+    path('messages/inbox/', views.message_list_optimized, name='message_list'),
     path('messages/unread/', views.unread_inbox, name='unread_inbox'), 
 ]
