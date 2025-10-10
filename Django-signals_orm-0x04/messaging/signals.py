@@ -43,4 +43,6 @@ def cleanup_user_related_data(sender, instance, **kwargs):
     Messages, Notifications, and MessageHistory records in the database.
     This signal is primarily for logging or deleting external data.
     """
-    print(f"User {instance.email} (ID: {instance.id}) deleted. Database CASCADE cleanup complete.")
+    messages_to_delete = Message.objects.filter(sender=instance.pk)
+    deleted_count, _ = messages_to_delete.delete()
+    print(f"User {instance.id} deleted. Explicitly cleaned up {deleted_count} sent messages via signal.")
