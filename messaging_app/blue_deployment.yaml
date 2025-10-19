@@ -1,3 +1,5 @@
+# messaging_app/blue_deployment.yaml (Modified for Task 5 - Rolling Update)
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +8,13 @@ metadata:
     app: messaging-app-bg
     color: blue
 spec:
-  replicas: 2
+  # RollingUpdate is the default strategy, ensuring zero-downtime
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  replicas: 3
   selector:
     matchLabels:
       app: messaging-app-bg
@@ -20,7 +28,7 @@ spec:
     spec:
       containers:
       - name: messaging-app-blue-container
-        image: alx-messaging-app:v1.0
+        image: alx-messaging-app:v2.0
         imagePullPolicy: Never
         ports:
         - containerPort: 8000
