@@ -1,23 +1,19 @@
 pipeline {
-    // Setting agent to 'none' globally resolves the 'docker: not found' issue 
-    // by preventing the entire pipeline from trying to use Docker immediately.
-    agent none 
+    agent {
+        docker {
+            image 'python:3.10-slim'
+            args '-u root'
+        }
+    }
 
     environment {
-        // ID of the credential stored in Jenkins (Username: GitHub Username, Password: PAT)
         GITHUB_CREDENTIAL_ID = 'github-access-token' 
-        // Output file for the JUnit XML report
         TEST_REPORT = 'test_results.xml'
-        // The directory containing the application code, relative to the workspace root
-        APP_DIR = 'messaging_app' 
     }
 
     stages {
         stage('Checkout Code') {
-            // Use 'agent any' to run on the default Jenkins node, which has 'git' available.
-            agent any 
             steps {
-                echo "Cloning repository..."
                 git branch: 'main',
                     credentialsId: env.GITHUB_CREDENTIAL_ID,
                     url: 'https://github.com/fazzy12/alx-backend-python.git'
@@ -25,121 +21,29 @@ pipeline {
         }
         
         stage('Install Dependencies') {
-            // This stage runs inside a temporary Python Docker container.
-            agent {
-                docker {
-                    image 'python:3.10-slim'
-                    args '-u root'
-                }
-            }
             steps {
-                echo "Installing Python dependencies..."
                 sh '''
-                    # Install app requirements and testing tools using the APP_DIR path
-                    pip install --no-cache-dir -r ${APP_DIR}/requirements.txt
+                    pip install --no-cache-dir -r messaging_app/requirements.txt
                     pip install pytest pytest-junitxml
                 '''
             }
         }
         
         stage('Run Tests') {
-            // This stage also runs inside the same configured Python Docker container.
-            agent {
-                docker {
-                    image 'python:3.10-slim'
-                    args '-u root'
-                }
-            }
             steps {
-                echo "Running unit tests and generating report..."
-                // Run pytest on the application direpipeline {
-    agent none // Prevents the Groovy compilation error
-
-    environment {
-        GITHUB_CREDENTIAL_ID = 'github-access-token' 
-        TEST_REPORT = 'test_results.xml'
-        APP_DIR = 'messaging_app' 
-    }
-
-    stages {
-        stage('Checkout Code') {
-            // Runs on the default Jenkins node (where Git is available)
-            agent any 
-            steps {
-                echo "Cloning repository..."
-                git branch: 'main',
-                    credentialsId: env.GITHUB_CREDENTIAL_ID,
-                    url: 'https://github.com/fazzy12/alx-backend-python.git'
-            }
-        }
-        
-        stage('Install and Test') { // Combined for efficiency
-            agent {
-                // The step that fails due to 'docker: not found'
-                docker {
-                    image 'python:3.10-slim'
-                    args '-u root'
-                }
-            }
-            steps {
-                echo "Installing dependencies and running tests inside Docker..."
-                // Install Dependencies
-                sh label: 'Install Deps', script: '''
-                    pip install --no-cache-dir -r ${APP_DIR}/requirements.txt
-                    pip install pytest pytest-junitxml
-                '''
-                // Run Tests
-                sh label: 'Run Pytest', script: "pytest ${env.APP_DIR}/ --junitxml=${env.TEST_REPORT}"
-            }
-        }
-    }
-    
-    // POST ACTIONS: Must have an agent defined when using 'agent none' globally
-    post {
-        always {
-            // Forces the post-action to run on the default Jenkins node
-            agent any 
-            
-            echo "Publishing JUnit test report to Jenkins dashboard..."
-            // Use the JUnit publisher
-            junit env.TEST_REPORT
-        }
-        failure {
-            echo "Pipeline FAILED! Check logs and ${env.TEST_REPORT}."
-        }
-        success {
-            echo "Pipeline SUCCESS! Ready for next steps."
-        }
-    }
-}ctory, outputting the XML report 
-                // to the workspace root, accessible by the post-build action.
-                sh "pytest ${env.APP_DIR}/ --junitxml=${env.TEST_REPORT}"
+                sh "pytest messaging_app/ --junitxml=${env.TEST_REPORT}"
             }
         }
         
         stage('Publish Test Report') {
-            // Use 'agent any' again, as the default Jenkins node is sufficient for reporting.
-            agent any 
             steps {
-                echo "Publishing JUnit test report to Jenkins dashboard..."
-                // Note: The 'junit' step is often defined in the post section, 
-                // but placing it in a separate step ensures it's clearly tracked.
+                echo "Archiving test report: ${env.TEST_REPORT}"
             }
-        }
-    }
-    
-    // Post actions are executed after all stages are completed (or failed).
-    post {
-        always {
-            // The junit publisher must run on an agent where the report file exists.
-            junit env.TEST_REPORT
-        }
-        failure {
-            echo "Pipeline FAILED! Sending notification..."
-            // Placeholder for an email/Slack notification step
-        }
-        success {
-            echo "Pipeline SUCCESS! Ready for next steps (e.g., Docker build/push)."
+            post {
+                always {
+                    junit env.TEST_REPORT
+                }
+            }
         }
     }
 }
