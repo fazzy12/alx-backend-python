@@ -1,0 +1,49 @@
+pipeline {
+    agent {
+        docker {
+            image 'python:3.10-slim'
+            args '-u root'
+        }
+    }
+
+    environment {
+        GITHUB_CREDENTIAL_ID = 'github-access-token' 
+        TEST_REPORT = 'test_results.xml'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    credentialsId: env.GITHUB_CREDENTIAL_ID,
+                    url: 'https://github.com/fazzy12/alx-backend-python.git'
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    pip install --no-cache-dir -r messaging_app/requirements.txt
+                    pip install pytest pytest-junitxml
+                '''
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                sh "pytest messaging_app/ --junitxml=${env.TEST_REPORT}"
+            }
+        }
+        
+        stage('Publish Test Report') {
+            steps {
+                echo "Archiving test report: ${env.TEST_REPORT}"
+            }
+            post {
+                always {
+                    junit env.TEST_REPORT
+                }
+            }
+        }
+    }
+}
