@@ -73,7 +73,7 @@ pipeline {
     
     post {
             always {
-                node('any') {
+                node('main') {
                     echo "Archiving test report: ${env.TEST_REPORT}"
                     junit env.TEST_REPORT
                 }
