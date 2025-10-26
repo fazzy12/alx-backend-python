@@ -70,19 +70,25 @@ pipeline {
             }
         }
     }
-    
+
     post {
-            always {
-                node('main') {
-                    echo "Archiving test report: ${env.TEST_REPORT}"
-                    junit env.TEST_REPORT
-                }
-            }
-            success {
-                echo "Pipeline SUCCESS! Image ${env.DOCKER_IMAGE}:${env.BUILD_ID} built and pushed."
-            }
-            failure {
-                echo "Pipeline FAILED! Check build log for details."
-            }
+        always {
+            echo 'Pipeline Finished!'
         }
+    }
+    
+    // post {
+    //         always {
+    //             node('main') {
+    //                 echo "Archiving test report: ${env.TEST_REPORT}"
+    //                 junit env.TEST_REPORT
+    //             }
+    //         }
+    //         success {
+    //             echo "Pipeline SUCCESS! Image ${env.DOCKER_IMAGE}:${env.BUILD_ID} built and pushed."
+    //         }
+    //         failure {
+    //             echo "Pipeline FAILED! Check build log for details."
+    //         }
+    //     }
 }
