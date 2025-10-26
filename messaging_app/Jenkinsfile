@@ -52,7 +52,66 @@ pipeline {
             }
             steps {
                 echo "Running unit tests and generating report..."
-                // Run pytest on the application directory, outputting the XML report 
+                // Run pytest on the application direpipeline {
+    agent none // Prevents the Groovy compilation error
+
+    environment {
+        GITHUB_CREDENTIAL_ID = 'github-access-token' 
+        TEST_REPORT = 'test_results.xml'
+        APP_DIR = 'messaging_app' 
+    }
+
+    stages {
+        stage('Checkout Code') {
+            // Runs on the default Jenkins node (where Git is available)
+            agent any 
+            steps {
+                echo "Cloning repository..."
+                git branch: 'main',
+                    credentialsId: env.GITHUB_CREDENTIAL_ID,
+                    url: 'https://github.com/fazzy12/alx-backend-python.git'
+            }
+        }
+        
+        stage('Install and Test') { // Combined for efficiency
+            agent {
+                // The step that fails due to 'docker: not found'
+                docker {
+                    image 'python:3.10-slim'
+                    args '-u root'
+                }
+            }
+            steps {
+                echo "Installing dependencies and running tests inside Docker..."
+                // Install Dependencies
+                sh label: 'Install Deps', script: '''
+                    pip install --no-cache-dir -r ${APP_DIR}/requirements.txt
+                    pip install pytest pytest-junitxml
+                '''
+                // Run Tests
+                sh label: 'Run Pytest', script: "pytest ${env.APP_DIR}/ --junitxml=${env.TEST_REPORT}"
+            }
+        }
+    }
+    
+    // POST ACTIONS: Must have an agent defined when using 'agent none' globally
+    post {
+        always {
+            // Forces the post-action to run on the default Jenkins node
+            agent any 
+            
+            echo "Publishing JUnit test report to Jenkins dashboard..."
+            // Use the JUnit publisher
+            junit env.TEST_REPORT
+        }
+        failure {
+            echo "Pipeline FAILED! Check logs and ${env.TEST_REPORT}."
+        }
+        success {
+            echo "Pipeline SUCCESS! Ready for next steps."
+        }
+    }
+}ctory, outputting the XML report 
                 // to the workspace root, accessible by the post-build action.
                 sh "pytest ${env.APP_DIR}/ --junitxml=${env.TEST_REPORT}"
             }
