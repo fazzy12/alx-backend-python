@@ -1,54 +1,87 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.10-slim'
-            args '-u root'
-        }
-    }
+    agent none 
 
     environment {
         GITHUB_CREDENTIAL_ID = 'github-access-token' 
+        DOCKERHUB_CREDENTIAL_ID = 'dockerhub-credentials'
+        DOCKER_IMAGE = 'fazzy12/messaging-app'
         TEST_REPORT = 'test_results.xml'
+        APP_DIR = 'messaging_app' 
     }
 
     stages {
         stage('Checkout Code') {
+            agent any 
             steps {
-                echo "Checking out code..."
+                echo "Cloning repository..."
                 git branch: 'main',
                     credentialsId: env.GITHUB_CREDENTIAL_ID,
                     url: 'https://github.com/fazzy12/alx-backend-python.git'
             }
         }
         
-        stage('Install Dependencies') {
+        stage('Install and Test') {
+            agent {
+                docker {
+                    image 'python:3.10-slim'
+                    args '-u root'
+                }
+            }
             steps {
-                echo "Installing dependencies..."
+                echo "Installing dependencies and running tests inside Docker..."
                 sh '''
-                    pip3 install --no-cache-dir -r messaging_app/requirements.txt
+                    pip3 install --no-cache-dir -r ${APP_DIR}/requirements.txt
                     pip3 install pytest pytest-junitxml
                 '''
+                sh "pytest ${env.APP_DIR}/ --junitxml=${env.TEST_REPORT}"
             }
         }
         
-        stage('Run Tests') {
+        stage('Build Docker Image') {
+            agent any
             steps {
-                echo "Running tests..."
-                sh "pytest messaging_app/ --junitxml=${env.TEST_REPORT}"
+                echo "Building Docker image: ${env.DOCKER_IMAGE}:${env.BUILD_ID}"
+                
+                sh "docker build -t ${env.DOCKER_IMAGE}:${env.BUILD_ID} ${env.APP_DIR}"
+            }
+        }
+        
+        stage('Push Docker Image') {
+            agent any
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: env.DOCKERHUB_CREDENTIAL_ID,
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    echo "Pushing image to Docker Hub..."
+                    
+
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+                    
+                    sh "docker push ${env.DOCKER_IMAGE}:${env.BUILD_ID}"
+                    
+
+                    sh "docker tag ${env.DOCKER_IMAGE}:${env.BUILD_ID} ${env.DOCKER_IMAGE}:latest"
+                    sh "docker push ${env.DOCKER_IMAGE}:latest"
+                    
+                    sh "docker logout"
+                }
             }
         }
     }
     
     post {
         always {
+            agent any 
             echo "Archiving test report: ${env.TEST_REPORT}"
             junit env.TEST_REPORT
         }
         success {
-            echo "Pipeline SUCCESS! Tests passed."
+            echo "Pipeline SUCCESS! Image ${env.DOCKER_IMAGE}:${env.BUILD_ID} built and pushed."
         }
         failure {
-            echo "Pipeline FAILED! Check test report for details."
+            echo "Pipeline FAILED! Check build log for details."
         }
     }
 }
